@@ -9,7 +9,7 @@ export default async function AdminPage() {
   // RLS ya limita a los tests de la usuaria; no hace falta filtrar por owner.
   const { data: tests } = await supabase
     .from("tests")
-    .select("id, nombre, tipo, estado, updated_at")
+    .select("id, nombre, tipo, estado, objetivo, updated_at")
     .order("updated_at", { ascending: false });
 
   return (
@@ -26,9 +26,10 @@ export default async function AdminPage() {
         <ul className="space-y-3">
           {tests.map((t) => (
             <li key={t.id}>
-              <Link href={`/admin/tests/${t.id}`} className={`${card} flex items-center justify-between hover:border-indigo-300`}>
+              <Link href={t.objetivo ? `/admin/tests/${t.id}` : `/admin/tests/${t.id}/configurar`} className={`${card} flex items-center justify-between hover:border-indigo-300`}>
                 <span className="font-medium text-slate-900">{t.nombre}</span>
                 <span className="flex gap-2 text-xs">
+                  {!t.objetivo && <span className="rounded-full bg-red-100 px-2 py-1 text-red-800">Configuración pendiente</span>}
                   <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-700">
                     {t.tipo === "perfil" ? "Perfil" : "Aptitud"}
                   </span>

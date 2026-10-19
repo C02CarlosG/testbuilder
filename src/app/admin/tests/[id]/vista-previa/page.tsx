@@ -21,7 +21,7 @@ export default async function VistaPreviaPage({ params }: { params: Promise<{ id
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div className="flex items-center justify-between">
-        <Link href={`/admin/tests/${id}`} className="text-sm text-indigo-700 hover:underline">← Volver al editor</Link>
+        <Link href={`/admin/tests/${id}/resultados`} className="text-sm text-indigo-700 hover:underline">← Volver</Link>
         <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">Vista previa · no se guardan respuestas</span>
       </div>
       <h1 className="text-2xl font-semibold text-slate-900">{test.nombre}</h1>

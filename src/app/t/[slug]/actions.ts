@@ -55,7 +55,8 @@ export async function enviarRespuestas(slug: string, raw: unknown): Promise<Resp
       .from("responses")
       .insert({
         test_id: test.id,
-        respondiente_nombre: entrada.datos["nombre"] ?? null,
+        // El campo «nombre» puede haberse escrito con otra capitalización (Nombre).
+        respondiente_nombre: Object.entries(entrada.datos).find(([k]) => k.toLowerCase() === "nombre")?.[1] ?? null,
         respondiente_datos: entrada.datos,
         consentimiento_at: test.aviso_privacidad ? new Date().toISOString() : null,
         resultado: resultado as unknown as Json,

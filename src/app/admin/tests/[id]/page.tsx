@@ -2,16 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ConfirmButton } from "@/components/ConfirmButton";
+import { Pasos } from "@/components/Pasos";
+import { DATOS_SUGERIDOS } from "@/lib/catalogo";
 import {
-  actualizarDimension, actualizarOpcion, actualizarPregunta, actualizarRegla, actualizarTest,
-  agregarDimension, agregarEscalaLikert, agregarOpcion, agregarPregunta, agregarRegla,
-  cambiarEstado, eliminarDimension, eliminarOpcion, eliminarPregunta, eliminarRegla, eliminarTest,
+  actualizarDimension, actualizarOpcion, actualizarPregunta, agregarCampo, agregarDimension,
+  agregarEscalaLikert, agregarOpcion, agregarPregunta, eliminarDimension, eliminarOpcion,
+  eliminarPregunta, quitarCampo,
 } from "../../actions";
 import { btn, btnDanger, btnGhost, card, input, label } from "../../ui";
 
-export const metadata = { title: "Editar test · TestBuilder" };
+export const metadata = { title: "Preguntas del test · TestBuilder" };
 
-export default async function EditorPage({
+// Paso 3: datos que se piden, parámetros que evalúa y preguntas con sus respuestas.
+export default async function PreguntasPage({
   params,
   searchParams,
 }: {
@@ -25,15 +28,13 @@ export default async function EditorPage({
   const { data: test } = await supabase.from("tests").select("*").eq("id", id).maybeSingle();
   if (!test) notFound(); // RLS: tests ajenos tampoco aparecen
 
-  const [dimsR, qsR, reglasR, respR] = await Promise.all([
+  const [dimsR, qsR, respR] = await Promise.all([
     supabase.from("dimensions").select("*").eq("test_id", id).order("orden"),
     supabase.from("questions").select("*").eq("test_id", id).order("orden"),
-    supabase.from("scoring_rules").select("*").eq("test_id", id).order("orden"),
     supabase.from("responses").select("id", { count: "exact", head: true }).eq("test_id", id),
   ]);
   const dims = dimsR.data ?? [];
   const preguntas = qsR.data ?? [];
-  const reglas = reglasR.data ?? [];
   const nRespuestas = respR.count ?? 0;
 
   const preguntaIds = preguntas.map((q) => q.id);
@@ -49,19 +50,16 @@ export default async function EditorPage({
   const confirmar = nRespuestas > 0
     ? `Este test ya tiene ${nRespuestas} respuesta(s). Cambiarlo puede alterar el significado de los resultados ya guardados. ¿Continuar?`
     : undefined;
-  const etiquetaDim = test.tipo === "perfil" ? "perfil" : "competencia";
-  const linkPublico = `/t/${test.slug}`;
+
+  const pedidos = test.campos_respondiente as string[];
+  const sugeridos = DATOS_SUGERIDOS.filter((s) => !pedidos.some((p) => p.toLowerCase() === s.toLowerCase()));
 
   return (
     <div className="space-y-8">
       <div>
         <Link href="/admin" className="text-sm text-indigo-700 hover:underline">← Mis tests</Link>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-slate-900">{test.nombre}</h1>
-          <span className={`rounded-full px-2 py-1 text-xs ${test.estado === "publicado" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>
-            {test.estado === "publicado" ? "Publicado" : "Borrador"}
-          </span>
-        </div>
+        <h1 className="mt-2 mb-4 text-xl font-semibold text-slate-900">{test.nombre}</h1>
+        <Pasos actual={3} testId={id} />
       </div>
 
       {ok && <p role="status" className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">{ok}</p>}
@@ -72,61 +70,46 @@ export default async function EditorPage({
         </p>
       )}
 
-      {/* Publicación */}
-      <section className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-slate-900">Publicación</h2>
-        {test.estado === "publicado" ? (
-          <>
-            <p className="text-sm text-slate-600">Link público para compartir (ruta; antepón el dominio de la aplicación):</p>
-            <code className="block break-all rounded bg-slate-100 px-3 py-2 text-sm">{linkPublico}</code>
-          </>
-        ) : (
-          <p className="text-sm text-slate-600">Solo tú ves este test hasta que lo publiques.</p>
-        )}
+      {/* A. Datos que se piden */}
+      <section id="datos" className={`${card} space-y-3`}>
+        <h2 className="font-semibold text-slate-900">Datos que se piden a quien contesta</h2>
+        <p className="text-sm text-slate-600">Toca un botón para agregar un dato. Quien conteste deberá llenarlos antes de empezar.</p>
+        <ul className="flex flex-wrap gap-2">
+          {pedidos.map((c) => (
+            <li key={c} className="flex items-center gap-1 rounded-full bg-indigo-50 py-1 pl-3 pr-1 text-sm text-indigo-900">
+              <span className="capitalize">{c}</span>
+              <form action={quitarCampo.bind(null, id, c)}>
+                <ConfirmButton className="rounded-full px-2 text-indigo-700 hover:bg-indigo-100" aria-label={`Quitar ${c}`} confirmar={confirmar}>×</ConfirmButton>
+              </form>
+            </li>
+          ))}
+        </ul>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/admin/tests/${id}/vista-previa`} className={btnGhost}>Vista previa</Link>
-          <form action={cambiarEstado.bind(null, id, test.estado === "publicado" ? "borrador" : "publicado")}>
-            <ConfirmButton className={btn} confirmar={test.estado === "publicado" ? "Al despublicar, el link dejará de funcionar. ¿Continuar?" : undefined}>
-              {test.estado === "publicado" ? "Despublicar" : "Publicar"}
-            </ConfirmButton>
-          </form>
+          {sugeridos.map((s) => (
+            <form key={s} action={agregarCampo.bind(null, id, s)}>
+              <ConfirmButton className={btnGhost} confirmar={confirmar}>+ {s}</ConfirmButton>
+            </form>
+          ))}
         </div>
-      </section>
-
-      {/* Datos del test */}
-      <section className={card}>
-        <h2 className="mb-3 font-semibold text-slate-900">Datos del test</h2>
-        <form action={actualizarTest.bind(null, id)} className="space-y-3">
-          <div>
-            <label className={label} htmlFor="nombre">Nombre</label>
-            <input id="nombre" name="nombre" required defaultValue={test.nombre} className={input} />
+        <form action={agregarCampo.bind(null, id, "")} className="flex flex-wrap items-end gap-2">
+          <div className="min-w-48 flex-1">
+            <label className={label} htmlFor="campo">Otro dato</label>
+            <input id="campo" name="campo" required className={input} placeholder="Ej.: Departamento" />
           </div>
-          <div>
-            <label className={label} htmlFor="descripcion">Descripción</label>
-            <textarea id="descripcion" name="descripcion" rows={2} defaultValue={test.descripcion ?? ""} className={input} />
-          </div>
-          <div>
-            <label className={label} htmlFor="campos">Datos que se piden a quien contesta (uno por línea)</label>
-            <textarea id="campos" name="campos" rows={3} defaultValue={(test.campos_respondiente as string[]).join("\n")} className={input} />
-          </div>
-          <div>
-            <label className={label} htmlFor="aviso">Aviso de privacidad</label>
-            <textarea id="aviso" name="aviso" rows={4} defaultValue={test.aviso_privacidad ?? ""} className={input} />
-          </div>
-          <p className="text-xs text-slate-500">Tipo: {test.tipo === "perfil" ? "Perfil" : "Aptitud"} (no se puede cambiar).</p>
-          <ConfirmButton className={btn} confirmar={confirmar}>Guardar datos</ConfirmButton>
+          <ConfirmButton className={btnGhost} confirmar={confirmar}>+ Agregar dato</ConfirmButton>
         </form>
       </section>
 
-      {/* Dimensiones */}
-      <section id="dimensiones" className={`${card} space-y-3`}>
+      {/* B. Parámetros que evalúa */}
+      <section id="parametros" className={`${card} space-y-3`}>
         <h2 className="font-semibold text-slate-900">
-          {test.tipo === "perfil" ? "Perfiles a clasificar" : "Competencias a medir"}
+          Parámetros que evalúa {test.tipo === "perfil" ? "(los perfiles)" : "(las competencias)"}
         </h2>
         <p className="text-sm text-slate-600">
           {test.tipo === "perfil"
-            ? "Cada respuesta suma puntos a uno o más perfiles; gana el de mayor puntaje."
-            : "Cada respuesta suma puntos a una o más competencias; el nivel sale del puntaje total."}
+            ? "Cada respuesta suma puntos a uno o más parámetros; el perfil final es el de mayor puntaje."
+            : "Cada respuesta suma puntos a uno o más parámetros; el nivel sale del puntaje total."}
+          {" "}Créalos primero: luego asignarás puntos a cada respuesta.
         </p>
         {dims.map((d) => (
           <div key={d.id} className="flex flex-wrap items-end gap-2">
@@ -142,189 +125,136 @@ export default async function EditorPage({
               <ConfirmButton className={btnGhost} confirmar={confirmar}>Guardar</ConfirmButton>
             </form>
             <form action={eliminarDimension.bind(null, id, d.id)}>
-              <ConfirmButton className={btnDanger} confirmar={confirmar ?? "Se borrarán también los pesos y reglas de esta dimensión. ¿Continuar?"}>Eliminar</ConfirmButton>
+              <ConfirmButton className={btnDanger} confirmar={confirmar ?? "Se borrarán también los puntos y reglas de este parámetro. ¿Continuar?"}>Eliminar</ConfirmButton>
             </form>
           </div>
         ))}
         <form action={agregarDimension.bind(null, id)} className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
           <div className="min-w-40 flex-1">
-            <label className={label}>Nuevo {etiquetaDim}</label>
-            <input name="nombre" required className={input} />
+            <label className={label}>Nuevo parámetro</label>
+            <input name="nombre" required className={input} placeholder={test.tipo === "perfil" ? "Ej.: Líder democrático" : "Ej.: Razonamiento numérico"} />
           </div>
           <div className="min-w-40 flex-[2]">
             <label className={label}>Descripción (opcional)</label>
             <input name="descripcion" className={input} />
           </div>
-          <ConfirmButton className={btn} confirmar={confirmar}>Agregar</ConfirmButton>
+          <ConfirmButton className={btn} confirmar={confirmar}>+ Agregar parámetro</ConfirmButton>
         </form>
       </section>
 
-      {/* Preguntas */}
+      {/* C. Preguntas del test → Pregunta → Respuestas → parámetro y puntos */}
       <section id="preguntas" className="space-y-4">
-        <h2 className="font-semibold text-slate-900">Preguntas</h2>
+        <h2 className="font-semibold text-slate-900">Preguntas del test</h2>
         {dims.length === 0 && (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            Primero agrega al menos una dimensión para poder asignar pesos.
+            Primero agrega al menos un parámetro para poder asignar puntos a las respuestas.
           </p>
         )}
         {preguntas.map((q, i) => {
           const ops = opciones.filter((o) => o.question_id === q.id);
           return (
-            <div key={q.id} id={`p-${q.id}`} className={`${card} space-y-3`}>
-              <form action={actualizarPregunta.bind(null, id, q.id)} className="flex flex-wrap items-end gap-2">
-                <span className="pb-2 text-sm font-medium text-slate-500">{i + 1}.</span>
-                <div className="min-w-60 flex-1">
-                  <label className={label}>Pregunta ({q.tipo === "escala" ? "escala" : "opción múltiple"})</label>
-                  <input name="texto" required defaultValue={q.texto} className={input} />
-                </div>
-                <div className="w-20">
-                  <label className={label}>Orden</label>
-                  <input name="orden" type="number" defaultValue={q.orden} className={input} />
-                </div>
-                <label className="flex items-center gap-1 pb-2 text-sm text-slate-700">
-                  <input type="checkbox" name="obligatoria" defaultChecked={q.obligatoria} /> Obligatoria
-                </label>
-                <ConfirmButton className={btnGhost} confirmar={confirmar}>Guardar</ConfirmButton>
-              </form>
-
-              {ops.map((o) => (
-                <div key={o.id} className="flex flex-wrap items-end gap-2 rounded-md bg-slate-50 p-2">
-                  <form action={actualizarOpcion.bind(null, id, o.id, q.id)} className="flex flex-1 flex-wrap items-end gap-2">
-                    <div className="min-w-48 flex-1">
-                      <label className={label}>Opción</label>
-                      <input name="texto" required defaultValue={o.texto} className={input} />
-                    </div>
-                    <div className="w-16">
-                      <label className={label}>Orden</label>
-                      <input name="orden" type="number" defaultValue={o.orden} className={input} />
-                    </div>
-                    {dims.map((d) => (
-                      <div key={d.id} className="w-24">
-                        <label className={label} title={d.nombre}>
-                          <span className="block max-w-24 truncate">Pts: {d.nombre}</span>
-                        </label>
-                        <input name={`peso_${d.id}`} type="number" step="any" defaultValue={peso.get(`${o.id}:${d.id}`) ?? 0} className={input} />
-                      </div>
-                    ))}
-                    <ConfirmButton className={btnGhost} confirmar={confirmar}>Guardar</ConfirmButton>
-                  </form>
-                  <form action={eliminarOpcion.bind(null, id, o.id, q.id)}>
-                    <ConfirmButton className={btnDanger} confirmar={confirmar}>Quitar</ConfirmButton>
-                  </form>
-                </div>
-              ))}
-
-              <div className="flex flex-wrap items-end gap-2">
-                <form action={agregarOpcion.bind(null, id, q.id)} className="flex flex-1 flex-wrap items-end gap-2">
-                  <div className="min-w-48 flex-1">
-                    <label className={label}>Nueva opción</label>
-                    <input name="texto" required className={input} />
+            <div key={q.id} id={`p-${q.id}`} className={`${card} space-y-4`}>
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-900">
+                  Pregunta {i + 1}{" "}
+                  <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-600">
+                    {q.tipo === "escala" ? "Escala" : "Opción múltiple"}
+                  </span>
+                </h3>
+                <form action={actualizarPregunta.bind(null, id, q.id)} className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-60 flex-1">
+                    <label className={label}>Texto de la pregunta</label>
+                    <input name="texto" required defaultValue={q.texto} className={input} />
                   </div>
-                  <ConfirmButton className={btnGhost} confirmar={confirmar}>Agregar opción</ConfirmButton>
-                </form>
-                {q.tipo === "escala" && (
-                  <form action={agregarEscalaLikert.bind(null, id, q.id)}>
-                    <ConfirmButton className={btnGhost} confirmar={confirmar}>Agregar escala Likert (5)</ConfirmButton>
-                  </form>
-                )}
-                <form action={eliminarPregunta.bind(null, id, q.id)}>
-                  <ConfirmButton className={btnDanger} confirmar={confirmar ?? "Se borrarán sus opciones y pesos. ¿Continuar?"}>Eliminar pregunta</ConfirmButton>
+                  <div className="w-20">
+                    <label className={label}>Orden</label>
+                    <input name="orden" type="number" defaultValue={q.orden} className={input} />
+                  </div>
+                  <label className="flex items-center gap-1 pb-2 text-sm text-slate-700">
+                    <input type="checkbox" name="obligatoria" defaultChecked={q.obligatoria} /> Obligatoria
+                  </label>
+                  <ConfirmButton className={btnGhost} confirmar={confirmar}>Guardar pregunta</ConfirmButton>
                 </form>
               </div>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-slate-700">Respuestas</h4>
+                {ops.length === 0 && <p className="text-sm text-slate-500">Aún no hay respuestas. Agrega al menos dos.</p>}
+                {ops.map((o, j) => (
+                  <div key={o.id} className="rounded-md bg-slate-50 p-3">
+                    <form action={actualizarOpcion.bind(null, id, o.id, q.id)} className="space-y-2">
+                      <div className="flex flex-wrap items-end gap-2">
+                        <div className="min-w-48 flex-1">
+                          <label className={label}>Respuesta {j + 1}</label>
+                          <input name="texto" required defaultValue={o.texto} className={input} />
+                        </div>
+                        <div className="w-16">
+                          <label className={label}>Orden</label>
+                          <input name="orden" type="number" defaultValue={o.orden} className={input} />
+                        </div>
+                      </div>
+                      {dims.length > 0 && (
+                        <div>
+                          <p className={label}>Parámetro que evalúa → puntos que suma esta respuesta</p>
+                          <div className="flex flex-wrap gap-2">
+                            {dims.map((d) => (
+                              <label key={d.id} className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm">
+                                <span className="max-w-40 truncate" title={d.nombre}>{d.nombre}</span>
+                                <input
+                                  name={`peso_${d.id}`} type="number" step="any" aria-label={`Puntos a ${d.nombre}`}
+                                  defaultValue={peso.get(`${o.id}:${d.id}`) ?? 0} className="w-16 rounded border border-slate-300 px-2 py-1 text-sm"
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <ConfirmButton className={btnGhost} confirmar={confirmar}>Guardar respuesta</ConfirmButton>
+                    </form>
+                    <form action={eliminarOpcion.bind(null, id, o.id, q.id)} className="mt-2">
+                      <ConfirmButton className="text-xs text-red-700 hover:underline" confirmar={confirmar}>Quitar esta respuesta</ConfirmButton>
+                    </form>
+                  </div>
+                ))}
+
+                <div className="flex flex-wrap items-end gap-2">
+                  <form action={agregarOpcion.bind(null, id, q.id)} className="flex flex-1 flex-wrap items-end gap-2">
+                    <div className="min-w-48 flex-1">
+                      <label className={label}>Nueva respuesta</label>
+                      <input name="texto" required className={input} />
+                    </div>
+                    <ConfirmButton className={btnGhost} confirmar={confirmar}>+ Agregar respuesta</ConfirmButton>
+                  </form>
+                  {q.tipo === "escala" && (
+                    <form action={agregarEscalaLikert.bind(null, id, q.id)}>
+                      <ConfirmButton className={btnGhost} confirmar={confirmar}>+ Escala Likert (1 a 5)</ConfirmButton>
+                    </form>
+                  )}
+                </div>
+              </div>
+
+              <form action={eliminarPregunta.bind(null, id, q.id)}>
+                <ConfirmButton className={btnDanger} confirmar={confirmar ?? "Se borrarán sus respuestas y puntos. ¿Continuar?"}>Eliminar esta pregunta</ConfirmButton>
+              </form>
             </div>
           );
         })}
-        <form action={agregarPregunta.bind(null, id)} className={`${card} flex flex-wrap items-end gap-2`}>
-          <div className="min-w-60 flex-1">
-            <label className={label}>Nueva pregunta</label>
-            <input name="texto" required className={input} />
-          </div>
+
+        <form action={agregarPregunta.bind(null, id)} className={`${card} space-y-3`}>
           <div>
-            <label className={label}>Tipo</label>
-            <select name="tipo" className={input}>
-              <option value="opcion_multiple">Opción múltiple</option>
-              <option value="escala">Escala (Likert)</option>
-            </select>
+            <label className={label} htmlFor="texto-nueva">Nueva pregunta</label>
+            <input id="texto-nueva" name="texto" required className={input} placeholder="Escribe la pregunta y elige su tipo de respuesta" />
           </div>
-          <ConfirmButton className={btn} confirmar={confirmar}>Agregar pregunta</ConfirmButton>
+          <div className="flex flex-wrap gap-2">
+            <ConfirmButton className={btn} name="tipo" value="opcion_multiple" confirmar={confirmar}>+ Pregunta de opción múltiple</ConfirmButton>
+            <ConfirmButton className={btn} name="tipo" value="escala" confirmar={confirmar}>+ Pregunta de escala (Likert)</ConfirmButton>
+          </div>
         </form>
       </section>
 
-      {/* Reglas */}
-      <section id="reglas" className={`${card} space-y-3`}>
-        <h2 className="font-semibold text-slate-900">Reglas de resultado</h2>
-        <p className="text-sm text-slate-600">
-          {test.tipo === "perfil"
-            ? "Define el texto que verá quien caiga en cada perfil. Los límites mínimo y máximo son opcionales."
-            : "Define rangos de puntaje (inclusivos) y el nivel que corresponde. «Puntaje total» suma todas las competencias."}
-        </p>
-        {reglas.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-end gap-2 rounded-md bg-slate-50 p-2">
-            <form action={actualizarRegla.bind(null, id, r.id)} className="flex flex-1 flex-wrap items-end gap-2">
-              <ReglaCampos dims={dims} regla={r} tipo={test.tipo} />
-              <ConfirmButton className={btnGhost} confirmar={confirmar}>Guardar</ConfirmButton>
-            </form>
-            <form action={eliminarRegla.bind(null, id, r.id)}>
-              <ConfirmButton className={btnDanger} confirmar={confirmar}>Quitar</ConfirmButton>
-            </form>
-          </div>
-        ))}
-        <form action={agregarRegla.bind(null, id)} className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
-          <ReglaCampos dims={dims} tipo={test.tipo} />
-          <ConfirmButton className={btn} confirmar={confirmar}>Agregar regla</ConfirmButton>
-        </form>
-      </section>
-
-      {/* Zona de peligro */}
-      <section className={`${card} border-red-200`}>
-        <h2 className="mb-2 font-semibold text-red-800">Eliminar test</h2>
-        <form action={eliminarTest.bind(null, id)}>
-          <ConfirmButton className={btnDanger} confirmar={`Se eliminará el test y sus ${nRespuestas} respuesta(s). No se puede deshacer. ¿Continuar?`}>
-            Eliminar este test
-          </ConfirmButton>
-        </form>
-      </section>
+      <div className="flex justify-end">
+        <Link href={`/admin/tests/${id}/resultados`} className={btn}>Continuar a resultados y publicación →</Link>
+      </div>
     </div>
-  );
-}
-
-type Dim = { id: string; nombre: string };
-type ReglaRow = {
-  dimension_id: string | null; min: number | null; max: number | null;
-  resultado_titulo: string; resultado_texto: string | null; orden: number;
-};
-
-// Campos compartidos por el alta y la edición de una regla.
-function ReglaCampos({ dims, regla, tipo }: { dims: Dim[]; regla?: ReglaRow; tipo: "perfil" | "aptitud" }) {
-  return (
-    <>
-      <div className="min-w-40">
-        <label className={label}>Aplica a</label>
-        <select name="dimension" defaultValue={regla?.dimension_id ?? "total"} className={input}>
-          {tipo === "aptitud" && <option value="total">Puntaje total</option>}
-          {dims.map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
-        </select>
-      </div>
-      <div className="w-20">
-        <label className={label}>Mín.</label>
-        <input name="min" type="number" step="any" defaultValue={regla?.min ?? ""} className={input} />
-      </div>
-      <div className="w-20">
-        <label className={label}>Máx.</label>
-        <input name="max" type="number" step="any" defaultValue={regla?.max ?? ""} className={input} />
-      </div>
-      <div className="min-w-40 flex-1">
-        <label className={label}>Título del resultado</label>
-        <input name="titulo" required defaultValue={regla?.resultado_titulo ?? ""} className={input} />
-      </div>
-      <div className="min-w-48 flex-[2]">
-        <label className={label}>Texto para el reporte</label>
-        <input name="descripcion" defaultValue={regla?.resultado_texto ?? ""} className={input} />
-      </div>
-      <div className="w-16">
-        <label className={label}>Orden</label>
-        <input name="orden" type="number" defaultValue={regla?.orden ?? 0} className={input} />
-      </div>
-    </>
   );
 }

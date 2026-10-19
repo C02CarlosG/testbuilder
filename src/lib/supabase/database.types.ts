@@ -11,17 +11,26 @@ export type Database = {
           id: string; owner_id: string; nombre: string; descripcion: string | null;
           tipo: "perfil" | "aptitud"; estado: "borrador" | "publicado"; slug: string;
           aviso_privacidad: string | null; campos_respondiente: Json;
+          clasificacion: "psicometrico" | "proyectivo";
+          rendimiento: "ejecucion_maxima" | "ejecucion_tipica";
+          campos_aplicacion: string[]; objetivo: string | null;
           created_at: string; updated_at: string;
         },
         {
           id?: string; owner_id: string; nombre: string; descripcion?: string | null;
           tipo: "perfil" | "aptitud"; estado?: "borrador" | "publicado"; slug?: string;
           aviso_privacidad?: string | null; campos_respondiente?: Json;
+          clasificacion?: "psicometrico" | "proyectivo";
+          rendimiento?: "ejecucion_maxima" | "ejecucion_tipica";
+          campos_aplicacion?: string[]; objetivo?: string | null;
         },
         {
           nombre?: string; descripcion?: string | null; tipo?: "perfil" | "aptitud";
           estado?: "borrador" | "publicado"; aviso_privacidad?: string | null;
           campos_respondiente?: Json;
+          clasificacion?: "psicometrico" | "proyectivo";
+          rendimiento?: "ejecucion_maxima" | "ejecucion_tipica";
+          campos_aplicacion?: string[]; objetivo?: string | null;
         }
       >;
       dimensions: Tbl<
