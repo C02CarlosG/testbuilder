@@ -76,9 +76,6 @@ estructura de preguntas y reglas, sin que Carlos tenga que intervenir cada vez.
 
 ## Estado actual
 
-Fase de planteamiento/arquitectura. Aún no se ha empezado a construir.
-Pendiente de definir:
-- Si habrá multi-tenant real (varias administradoras) o es solo para ella.
-- Tipos de pregunta soportados (opción múltiple, escala Likert, etc.).
-- Datos que se piden al respondiente y aviso de privacidad.
-- Formato y diseño del reporte individual.
+Ver la tabla "Estado del proyecto" en `PLAN.md`. Fases 0–3 completas; sigue la Fase 4 (formulario público).
+Notas técnicas: Next.js 16 (el archivo de middleware se llama `proxy.ts`), `cacheComponents` desactivado,
+tipos de BD en `src/lib/supabase/database.types.ts`, motor en `src/lib/scoring/`.
