@@ -10,7 +10,12 @@ export async function iniciarSesion(formData: FormData) {
     email: texto(formData, "email"),
     password: String(formData.get("password") ?? ""),
   });
-  if (error) redirect("/login?error=1");
+  if (error) {
+    // Solo las credenciales malas se reportan como tales; lo demás (red, llaves, proyecto
+    // equivocado) es un problema de configuración y se distingue para poder diagnosticarlo.
+    console.error("Fallo al iniciar sesión:", error.code ?? error.name, error.message);
+    redirect(error.code === "invalid_credentials" ? "/login?error=1" : "/login?error=2");
+  }
   redirect("/admin");
 }
 

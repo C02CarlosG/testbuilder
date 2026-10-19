@@ -16,7 +16,9 @@ export default async function LoginPage({
         <p className="text-sm text-slate-600">Acceso para administradoras.</p>
         {error && (
           <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-            Correo o contraseña incorrectos.
+            {error === "2"
+              ? "No pudimos conectar con el servicio de acceso. Revisa la configuración (.env.local) e inténtalo de nuevo."
+              : "Correo o contraseña incorrectos."}
           </p>
         )}
         <div>
