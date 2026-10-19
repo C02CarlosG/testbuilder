@@ -15,8 +15,8 @@ Plataforma donde una ingeniera industrial crea tests propios (preguntas, pesos, 
 | 1 — Modelo de datos | ✅ Migraciones aplicadas en Supabase `testbuilder`; RLS probada |
 | 2 — Motor de puntuación | ✅ 17 pruebas pasan; falta contrastar con un test real |
 | 3 — Panel de administradora | ✅ Login, CRUD completo, vista previa y publicar; probado de punta a punta |
-| 4 — Formulario público | ⏳ Siguiente |
-| 5 — Reportes y resultados | ⬜ Pendiente |
+| 4 — Formulario público | ✅ Construida y probada hasta el envío; **falta probar el guardado real con `SUPABASE_SERVICE_ROLE_KEY`** |
+| 5 — Reportes y resultados | ⏳ Siguiente |
 | 6 — Pruebas y despliegue | ⬜ Pendiente |
 
 **Decisiones tomadas:** respuestas se guardan solo vía servidor (service role) · cada administradora ve solo lo suyo ·

@@ -76,6 +76,6 @@ estructura de preguntas y reglas, sin que Carlos tenga que intervenir cada vez.
 
 ## Estado actual
 
-Ver la tabla "Estado del proyecto" en `PLAN.md`. Fases 0–3 completas; sigue la Fase 4 (formulario público).
+Ver la tabla "Estado del proyecto" en `PLAN.md`. Fases 0–4 construidas; sigue la Fase 5 (reportes). Pendiente verificar el envío real con la llave service role.
 Notas técnicas: Next.js 16 (el archivo de middleware se llama `proxy.ts`), `cacheComponents` desactivado,
 tipos de BD en `src/lib/supabase/database.types.ts`, motor en `src/lib/scoring/`.
