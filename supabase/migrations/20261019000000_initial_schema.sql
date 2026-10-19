@@ -1,4 +1,4 @@
--- TestBuilder · esquema inicial (PROPUESTA — aún no aplicado)
+-- TestBuilder · esquema inicial (aplicado en el proyecto Supabase testbuilder)
 -- Motor genérico: preguntas → pesos por dimensión → reglas → resultado.
 
 create extension if not exists pgcrypto;
@@ -119,9 +119,9 @@ create table response_answers (
 create function check_weight_same_test() returns trigger language plpgsql as $$
 begin
   if not exists (
-    select 1 from answer_options o
-    join questions q on q.id = o.question_id
-    join dimensions d on d.id = new.dimension_id and d.test_id = q.test_id
+    select 1 from public.answer_options o
+    join public.questions q on q.id = o.question_id
+    join public.dimensions d on d.id = new.dimension_id and d.test_id = q.test_id
     where o.id = new.option_id
   ) then
     raise exception 'La dimensión y la opción pertenecen a tests distintos';
@@ -135,8 +135,8 @@ create trigger option_weights_same_test before insert or update on option_weight
 create function check_answer_same_test() returns trigger language plpgsql as $$
 begin
   if not exists (
-    select 1 from responses r
-    join questions q on q.test_id = r.test_id
+    select 1 from public.responses r
+    join public.questions q on q.test_id = r.test_id
     where r.id = new.response_id and q.id = new.question_id
   ) then
     raise exception 'La pregunta no pertenece al test de la respuesta';
@@ -158,43 +158,43 @@ alter table response_answers  enable row level security;
 
 -- Administradora: CRUD completo sobre lo suyo.
 create policy tests_owner on tests for all to authenticated
-  using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+  using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
 
 create policy dimensions_owner on dimensions for all to authenticated
-  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()))
-  with check (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()));
+  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())))
+  with check (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())));
 
 create policy questions_owner on questions for all to authenticated
-  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()))
-  with check (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()));
+  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())))
+  with check (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())));
 
 create policy answer_options_owner on answer_options for all to authenticated
   using (exists (select 1 from questions q join tests t on t.id = q.test_id
-                 where q.id = question_id and t.owner_id = auth.uid()))
+                 where q.id = question_id and t.owner_id = (select auth.uid())))
   with check (exists (select 1 from questions q join tests t on t.id = q.test_id
-                      where q.id = question_id and t.owner_id = auth.uid()));
+                      where q.id = question_id and t.owner_id = (select auth.uid())));
 
 create policy option_weights_owner on option_weights for all to authenticated
-  using (exists (select 1 from answer_options o join questions q on q.id = o.question_id
+  using (exists (select 1 from answer_options o join public.questions q on q.id = o.question_id
                  join tests t on t.id = q.test_id
-                 where o.id = option_id and t.owner_id = auth.uid()))
-  with check (exists (select 1 from answer_options o join questions q on q.id = o.question_id
+                 where o.id = option_id and t.owner_id = (select auth.uid())))
+  with check (exists (select 1 from answer_options o join public.questions q on q.id = o.question_id
                       join tests t on t.id = q.test_id
-                      where o.id = option_id and t.owner_id = auth.uid()));
+                      where o.id = option_id and t.owner_id = (select auth.uid())));
 
 create policy scoring_rules_owner on scoring_rules for all to authenticated
-  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()))
-  with check (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()));
+  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())))
+  with check (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())));
 
 -- Respuestas: la administradora solo lee y borra las de sus tests. No inserta ni edita.
 create policy responses_owner_read on responses for select to authenticated
-  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()));
+  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())));
 create policy responses_owner_delete on responses for delete to authenticated
-  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = auth.uid()));
+  using (exists (select 1 from tests t where t.id = test_id and t.owner_id = (select auth.uid())));
 
 create policy response_answers_owner_read on response_answers for select to authenticated
   using (exists (select 1 from responses r join tests t on t.id = r.test_id
-                 where r.id = response_id and t.owner_id = auth.uid()));
+                 where r.id = response_id and t.owner_id = (select auth.uid())));
 
 -- Respondiente público (anon): solo lee test publicado, sus preguntas y opciones (texto).
 -- NO ve pesos, dimensiones ni reglas (evita que adivine cómo puntuar).
