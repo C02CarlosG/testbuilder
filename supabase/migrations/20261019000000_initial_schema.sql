@@ -9,7 +9,7 @@ create type test_estado   as enum ('borrador', 'publicado');
 create type pregunta_tipo as enum ('opcion_multiple', 'escala');
 
 -- ───────── Utilidad: updated_at ─────────
-create function set_updated_at() returns trigger language plpgsql as $$
+create function set_updated_at() returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at = now(); return new; end $$;
 
 -- ───────── tests ─────────
@@ -116,7 +116,7 @@ create table response_answers (
 
 -- ───────── Integridad entre tablas (mismo test) ─────────
 -- option_weights: la dimensión debe ser del mismo test que la pregunta de la opción.
-create function check_weight_same_test() returns trigger language plpgsql as $$
+create function check_weight_same_test() returns trigger language plpgsql set search_path = '' as $$
 begin
   if not exists (
     select 1 from public.answer_options o
@@ -132,7 +132,7 @@ create trigger option_weights_same_test before insert or update on option_weight
   for each row execute function check_weight_same_test();
 
 -- response_answers: la pregunta debe ser del mismo test que la respuesta.
-create function check_answer_same_test() returns trigger language plpgsql as $$
+create function check_answer_same_test() returns trigger language plpgsql set search_path = '' as $$
 begin
   if not exists (
     select 1 from public.responses r
