@@ -8,7 +8,8 @@ const PASOS = [
 ];
 
 // Indicador de pasos del asistente. Sin `testId` (test aún no creado) los pasos no son enlaces.
-export function Pasos({ actual, testId }: { actual: 1 | 2 | 3 | 4; testId?: string }) {
+// `actual` = 5 marca todos los pasos como hechos (pantallas posteriores, como las respuestas).
+export function Pasos({ actual, testId }: { actual: 1 | 2 | 3 | 4 | 5; testId?: string }) {
   return (
     <ol className="mb-6 flex flex-wrap gap-2 text-sm" aria-label="Pasos para armar el test">
       {PASOS.map((p) => {
@@ -36,6 +37,13 @@ export function Pasos({ actual, testId }: { actual: 1 | 2 | 3 | 4; testId?: stri
           </li>
         );
       })}
+      {testId && (
+        <li className="sm:ml-auto">
+          <Link href={`/admin/tests/${testId}/respuestas`} className="inline-block rounded-full border border-slate-300 bg-white px-3 py-1 text-slate-700 hover:bg-slate-50">
+            Ver respuestas
+          </Link>
+        </li>
+      )}
     </ol>
   );
 }

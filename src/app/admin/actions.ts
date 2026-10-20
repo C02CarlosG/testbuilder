@@ -295,3 +295,13 @@ export async function eliminarRegla(testId: string, reglaId: string) {
   chequear(error, testId, "resultados", "#reglas");
   volver(testId, "resultados", { ok: "Regla eliminada" }, "#reglas");
 }
+
+// ───────── Respuestas recibidas ─────────
+
+export async function eliminarRespuesta(testId: string, respuestaId: string) {
+  const { supabase } = await contexto();
+  const { error } = await supabase.from("responses").delete().eq("id", respuestaId);
+  if (error) redirect(`/admin/tests/${testId}/respuestas?error=${enc(error.message)}`);
+  revalidatePath(`/admin/tests/${testId}/respuestas`);
+  redirect(`/admin/tests/${testId}/respuestas?ok=${enc("Respuesta eliminada")}`);
+}

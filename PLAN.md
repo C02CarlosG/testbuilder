@@ -15,9 +15,9 @@ Plataforma donde una ingeniera industrial crea tests propios (preguntas, pesos, 
 | 1 — Modelo de datos | ✅ Migraciones aplicadas en Supabase `testbuilder`; RLS probada |
 | 2 — Motor de puntuación | ✅ 17 pruebas pasan; falta contrastar con un test real |
 | 3 — Panel de administradora | ✅ Asistente de 4 pasos (datos básicos → clasificación y objetivo → preguntas → resultados y publicación); probado de punta a punta |
-| 4 — Formulario público | ✅ Construida y probada hasta el envío; **falta probar el guardado real con `SUPABASE_SERVICE_ROLE_KEY`** |
-| 5 — Reportes y resultados | ⏳ Siguiente |
-| 6 — Pruebas y despliegue | ⬜ Pendiente |
+| 4 — Formulario público | ✅ Probado con el guardado real (llave service role) por la usuaria |
+| 5 — Reportes y resultados | ✅ Lista de respuestas, reporte individual (pantalla + PDF), exportar Excel/CSV; falta definir diseño final del reporte (logo/colores) |
+| 6 — Pruebas y despliegue | ⏳ Siguiente |
 
 **Decisiones tomadas:** clasificación (psicométrico/proyectivo), rendimiento (máxima/típica), campos de aplicación y objetivo son columnas de `tests` · «forma de calificar» (perfil/aptitud) se elige aparte del rendimiento · las pruebas proyectivas se registran pero TestBuilder solo califica respuestas cerradas · respuestas se guardan solo vía servidor (service role) · cada administradora ve solo lo suyo ·
 tests editables sin restricción, con confirmación si ya tienen respuestas · campos del respondiente configurables por test ·

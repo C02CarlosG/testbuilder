@@ -76,7 +76,8 @@ estructura de preguntas y reglas, sin que Carlos tenga que intervenir cada vez.
 
 ## Estado actual
 
-Ver la tabla "Estado del proyecto" en `PLAN.md`. Fases 0–4 construidas; sigue la Fase 5 (reportes). Pendiente verificar el envío real con la llave service role.
+Ver la tabla "Estado del proyecto" en `PLAN.md`. Fases 0–5 construidas y probadas; sigue la Fase 6 (pruebas con un test real, seguridad/rate limiting y despliegue en Vercel).
 Panel = asistente de 4 pasos: `/admin/tests/new` → `/[id]/configurar` → `/[id]` (preguntas) → `/[id]/resultados`.
+Reportes: `src/lib/reportes.ts` (lógica pura), `reportes-datos.ts` (carga), `pdf.ts` (pdf-lib); rutas `/admin/tests/[id]/respuestas`, `/exportar`, `/respuestas/[rid]/pdf`.
 Notas técnicas: Next.js 16 (el archivo de middleware se llama `proxy.ts`), `cacheComponents` desactivado,
 tipos de BD en `src/lib/supabase/database.types.ts`, motor en `src/lib/scoring/`.
