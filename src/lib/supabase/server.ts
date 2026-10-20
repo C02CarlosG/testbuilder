@@ -1,11 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import type { Database } from "./database.types";
 
 // Cliente de servidor ligado a la sesión de la administradora (RLS aplica).
 export async function createClient() {
   const cookieStore = await cookies();
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -28,7 +29,7 @@ export async function createClient() {
 // Cliente con service role: SOLO en rutas de servidor (calcular y guardar resultados).
 // Salta RLS, así que nunca debe importarse desde código de cliente.
 export function createServiceClient() {
-  return createAdminClient(
+  return createAdminClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } },
